@@ -1,4 +1,4 @@
-package csa
+package cobraargs
 
 import (
 	"fmt"
