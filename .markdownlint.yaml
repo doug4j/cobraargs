@@ -1,0 +1,12 @@
+
+# For more information see https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md
+
+line_length:
+  code_blocks: false
+
+no-inline-html:
+  allowed_elements:
+    - table
+    - tr
+    - td
+
