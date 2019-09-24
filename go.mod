@@ -1,4 +1,4 @@
-module github.com/doug4j/cobra-struct-args
+module github.com/doug4j/cobraargs
 
 go 1.13
 
