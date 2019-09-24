@@ -9,12 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const DefaultValueOnListSeparator = ":"
+
 type Argument struct {
 	Required        bool
 	LongName        string
 	ShortName       string
 	HasDefaultValue bool
 	DefaultValue    string
+	OnListSeparator string
 }
 
 func ParseArgFromField(field reflect.StructField) (argument Argument, err error) {
@@ -69,8 +72,16 @@ func processArgShortName(argument *Argument, fieldName, tagName, tagValue string
 	return nil
 }
 
-func processArg(argument *Argument, fieldName, tagName, tagValue string) error {
+func processOnListSeparator(argument *Argument, fieldName, tagName, tagValue string) error {
+	if len(tagValue) > 1 {
+		return fmt.Errorf("arg field %v for 'onlistseperator' field's value is greater than 1 character, it's name/value %v/[%v]", fieldName, tagName, tagValue)
+	}
+	argument.OnListSeparator = tagValue
+	return nil
+}
 
+func processArg(argument *Argument, fieldName, tagName, tagValue string) error {
+	tagName = strings.ToLower(tagName)
 	switch tagName {
 	case "required":
 		return processArgRequired(argument, fieldName, tagName, tagValue)
@@ -82,8 +93,30 @@ func processArg(argument *Argument, fieldName, tagName, tagValue string) error {
 		return nil
 	case "shortname":
 		return processArgShortName(argument, fieldName, tagName, tagValue)
+	case "onlistseparator":
+		return processOnListSeparator(argument, fieldName, tagName, tagValue)
 	}
+
 	return nil
+}
+
+// AttachStringListArg uses reflection to read the provided struct to determine the arguments.
+func AttachStringListArg(cmd *cobra.Command, parmType reflect.Type, variableName string, variableValue *[]string, defaultValues ...string) {
+	arg, rawHelp := parseArg(parmType, variableName)
+	var defaultValue []string
+	if arg.HasDefaultValue {
+		seperator := arg.OnListSeparator
+		if seperator == "" {
+			seperator = DefaultValueOnListSeparator
+		}
+		defaultValue = strings.Split(arg.DefaultValue, seperator)
+	}
+	if len(defaultValues) > 0 {
+		defaultValue = defaultValues
+	}
+	//p *[]string, name, shorthand string, value []string, usage string
+	cmd.Flags().StringArrayVarP(variableValue, arg.LongName, arg.ShortName, defaultValue, rationalizeHelp(arg, rawHelp))
+	processRequiredArg(cmd, arg)
 }
 
 // AttachStringArg uses reflection to read the provided struct to determine the arguments. otherArgs has the first argument is the defaultDefault value that overrides anything defined in the struct argument tag.
